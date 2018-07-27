@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh_cn">
+<head>
+    <meta charset="UTF-8">
+    <script src="/static/js/jquery-3.1.1.min.js"></script>
+    <script src="/static/js/bootstrap.min.js"></script>
+    <script src="/static/js/nanobar.min.js"></script>
+    <link rel="stylesheet" href="../static/css/bootstrap.min.css">
+
+	<style>
+
+      #bar_show_area {
+        padding: 1em;
+        background: #fff;
+        margin:0 auto;
+        width: 60%;
+        box-sizing: border-box;
+      }
+
+      #bar_show_area .nanobar {
+        margin-bottom: 2em;
+      }
+
+      #bar_show_area .nanobar .bar {
+        background: #38f;
+        border-radius: 4px;
+        box-shadow: 0 0 10px #59d;
+        height: 6px;
+        /*margin: 0 auto;*/
+      }
+
+      /* 任务背景 */
+      .task_div{
+        background:#d9edf6;
+      }
+
+    </style>
+
+    <title>进度条</title>
+</head>
+<body>
+<div style="height: 20%"></div>
+<div style="text-align: center">
+    <button type="button" class="btn btn-primary" id="start_btn">原始按钮</button>
+</div>
+
+<div>
+    <div id="bar_show_area" ></div>
+</div>
+
+</body>
+<script>
+$(function () {
+    // alert("test");
+    var task_dic = new Array();
+    // 按钮点击事件
+    $("#start_btn").click(function () {
+        // alert(1);
+        $.ajax({
+          type:"POST",
+          url: "/run",
+          success:function(data,status,resp){
+            the_task_id = data.task_id;   // 获取任务的 task_id
+            //alert(the_task_id);
+            // 将本次task的进度展示区域展示在id=bar_show_area的div区域（append）
+            if (the_task_id){
+              $("#bar_show_area").append("<div class='task_div'>任务："+the_task_id+"<span id='"+the_task_id+"_span' style='float:right'></span><div id='"+the_task_id+"'></div><div>"); //进度条绑定区域
+              // 创建进度条对象
+              var nanobar = new Nanobar({target:document.getElementById(the_task_id)});
+              update_progress(the_task_id,nanobar);
+            }
+          },
+          error:function() {
+                    alert('Unexpected error');
+                }
+        });
+      });
+        // ajax end
+    // end
+
+    //更新进度条的函数
+    function update_progress(the_task_id,nanobar){
+      $.get("/status/"+the_task_id,function(data){
+        percent = parseInt(data['progress']);
+        // alert(percent);
+        nanobar.go(percent);
+        // if (data['state'] != 'PENDING' && data['state'] != 'PROGRESS'){//state == 'success'
+        if (data['state'] == 'success'){
+          //alert("任务完成");
+          // $("#"+the_task_id).append('完成');
+          $("#"+the_task_id+"_span").empty();
+          $("#"+the_task_id+"_span").append(percent+'%'+'完成');
+
+          $("#"+the_task_id).parent().css("background","#def0d8");
+
+        }
+        else{
+          $("#"+the_task_id+"_span").empty();
+          $("#"+the_task_id+"_span").append(percent+'%');
+          setTimeout(function(){
+            update_progress(the_task_id,nanobar);
+          },2000);
+        }
+      });
+    };
+    //end
+})
+</script>
+</html>
